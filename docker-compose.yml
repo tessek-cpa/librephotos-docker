@@ -7,11 +7,10 @@
 #   build cmd: COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose build
 #   run cmd: docker-compose up -d
 
-version: "3.8"
 services:
   proxy:
     image: reallibrephotos/librephotos-proxy:${tag}
-    container_name: proxy
+    container_name: librephotos-proxy
     restart: unless-stopped
     volumes:
       - ${scanDirectory}:/data
@@ -21,10 +20,13 @@ services:
     depends_on:
       - backend
       - frontend
+    networks:
+      - default
+      - gallery_tunnel
 
   db:
     image: postgres:13
-    container_name: db
+    container_name: librephotos-db
     restart: unless-stopped
     environment:
       - POSTGRES_USER=${dbUser}
@@ -38,15 +40,19 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - default
 
   frontend:
     image: reallibrephotos/librephotos-frontend:${tag}
-    container_name: frontend
+    container_name: librephotos-frontend
     restart: unless-stopped
+    networks:
+      - default
 
   backend:
     image: reallibrephotos/librephotos:${tag}
-    container_name: backend
+    container_name: librephotos-backend
     restart: unless-stopped
     volumes:
       - ${scanDirectory}:/data
@@ -75,3 +81,11 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - default
+networks:
+  default:
+    name: librephotos_net
+  gallery_tunnel:
+    external: true
+
